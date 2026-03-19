@@ -1,10 +1,10 @@
-# RoofWatt
+# GreenLens
 
 **Hyperlocal Rooftop Solar Intelligence for India**
 
 ---
 
-## The Team
+## The Team - RoofWatt
 
 | Name | Roll Number | Role |
 |---|---|---|
@@ -32,4 +32,4 @@ Not because people don't want solar, but because:
 
 ## Our Solution
 
-RoofWatt provides **precise, site-specific solar yield estimates** for any rooftop in India — generating reports that homeowners, lenders, and installers can actually trust and act on.
+Our project GreenLens provides **precise, site-specific solar yield estimates** for any rooftop in India — generating reports that homeowners, lenders, and installers can actually trust and act on.
