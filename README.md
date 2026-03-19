@@ -11,4 +11,3 @@
 - Installers give inflated ROI estimates, eroding trust
 - Slum clusters, small factories, and tier-3 towns are completely ignored by existing tools
 - The gap isn't technology. It's hyperlocal, trustworthy, actionable intelligence.
-<img width="3709" height="632" alt="image" src="https://github.com/user-attachments/assets/d7139ad5-b2b8-4861-8e01-df4724115357" />
