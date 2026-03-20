@@ -14,8 +14,13 @@ __pycache__/
 env/
 venv/
 
-# ML model (optional - remove this line if you want to track the model)
+# Ignore all JSON files
 *.json
+
+# But keep these specific ones
+!frontend/package.json
+!frontend/package-lock.json
+!backend/model/ghi_model.json
 
 # Environment variables
 .env
