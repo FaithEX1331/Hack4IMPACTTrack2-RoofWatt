@@ -3,6 +3,7 @@ import MapSketch from "./components/MapSketch";
 import InputForm from "./components/InputForm";
 import Dashboard from "./components/Dashboard";
 import "./App.css";
+import logo from "./assets/logo.svg";
 
 export default function App() {
   const [step, setStep] = useState(1);
@@ -49,10 +50,7 @@ const handleFormSubmit = async (data) => {
     <div>
       <header className="app-header">
         <div className="header-inner">
-          <div className="logo">
-            <div className="logo-sun" />
-            RoofWatt
-          </div>
+          <img src={logo} alt="GreenLens" height="28" />
           <span className="tagline">Hyperlocal solar intelligence</span>
           <div className="step-indicator">
             {STEPS.map((label, i) => (
