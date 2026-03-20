@@ -13,31 +13,32 @@ export default function App() {
 
   const handleMapDone = (data) => { setRooftopData(data); setStep(2); };
 
-  const handleFormSubmit = async (data) => {
-    setFormData(data);
-    setLoading(true);
-    try {
-      const res = await fetch("http://localhost:8000/api/predict", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          latitude: rooftopData.lat,
-          longitude: rooftopData.lng,
-          rooftop_area_sqm: rooftopData.area,
-          monthly_bill_inr: data.monthlyBill,
-          city: data.city,
-        }),
-      });
-      const result = await res.json();
-      setResults(result);
-      setStep(3);
-    } catch (err) {
-      alert("API error: " + err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+const API = process.env.REACT_APP_API_URL || "http://localhost:8000";
 
+const handleFormSubmit = async (data) => {
+  setFormData(data);
+  setLoading(true);
+  try {
+    const res = await fetch(`${API}/api/predict`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        latitude: rooftopData.lat,
+        longitude: rooftopData.lng,
+        rooftop_area_sqm: rooftopData.area,
+        monthly_bill_inr: data.monthlyBill,
+        city: data.city,
+      }),
+    });
+    const result = await res.json();
+    setResults(result);
+    setStep(3);
+  } catch (err) {
+    alert("API error: " + err.message);
+  } finally {
+    setLoading(false);
+  }
+};
   const handleReset = () => {
     setStep(1); setRooftopData(null); setFormData(null); setResults(null);
   };

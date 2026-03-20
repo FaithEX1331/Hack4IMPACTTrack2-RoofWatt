@@ -6,15 +6,16 @@ import {
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
-const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const API = process.env.REACT_APP_API_URL || "http://localhost:8000";
 
 const STATS = [
-  { key: "capacity_kw",            label: "Capacity",      fmt: v => `${v} kW`,                 accent: "#1e6b2e" },
-  { key: "annual_generation_kwh",  label: "Generation/yr", fmt: v => `${v} kWh`,                accent: "#3b8c3b" },
-  { key: "annual_savings_inr",     label: "Savings/yr",    fmt: v => `₹${v?.toLocaleString()}`, accent: "#5cb85c" },
-  { key: "payback_years",          label: "Payback",       fmt: v => `${v} yrs`,                accent: "#1e6b2e" },
-  { key: "co2_offset_kg_per_year", label: "CO₂ offset/yr", fmt: v => `${v} kg`,                 accent: "#3b8c3b" },
-  { key: "subsidy_inr",            label: "Govt subsidy",  fmt: v => `₹${v?.toLocaleString()}`, accent: "#5cb85c" },
+  { key: "capacity_kw", label: "Capacity", fmt: v => `${v} kW`, accent: "#1e6b2e" },
+  { key: "annual_generation_kwh", label: "Generation/yr", fmt: v => `${v} kWh`, accent: "#3b8c3b" },
+  { key: "annual_savings_inr", label: "Savings/yr", fmt: v => `₹${v?.toLocaleString()}`, accent: "#5cb85c" },
+  { key: "payback_years", label: "Payback", fmt: v => `${v} yrs`, accent: "#1e6b2e" },
+  { key: "co2_offset_kg_per_year", label: "CO₂ offset/yr", fmt: v => `${v} kg`, accent: "#3b8c3b" },
+  { key: "subsidy_inr", label: "Govt subsidy", fmt: v => `₹${v?.toLocaleString()}`, accent: "#5cb85c" },
 ];
 
 export default function Dashboard({ results, formData, rooftopData, onReset }) {
@@ -56,7 +57,7 @@ export default function Dashboard({ results, formData, rooftopData, onReset }) {
   };
 
   const handleDownload = async () => {
-    const res = await fetch("http://localhost:8000/api/report/generate", {
+    const res = await fetch(`${API}/api/report/generate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -73,7 +74,7 @@ export default function Dashboard({ results, formData, rooftopData, onReset }) {
       }),
     });
     const data = await res.json();
-    if (data.download_url) window.open("http://localhost:8000" + data.download_url, "_blank");
+    if (data.download_url) window.open(`${API}${data.download_url}`, "_blank");
   };
 
   return (
