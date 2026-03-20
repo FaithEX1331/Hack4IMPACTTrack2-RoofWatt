@@ -1,0 +1,162 @@
+from fastapi import APIRouter, HTTPException
+from fastapi.responses import FileResponse
+from pydantic import BaseModel
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import cm
+import os
+import uuid
+import re
+
+router = APIRouter()
+
+REPORTS_DIR = "data/reports"
+SAFE_FILENAME_RE = re.compile(r"^greenlens_report_[0-9a-f]{8}\.pdf$")
+
+
+class ReportRequest(BaseModel):
+    name: str
+    address: str
+    city: str
+    # Fields must match exactly what Dashboard.jsx sends in handleDownload
+    capacity_kw: float
+    annual_kwh: float
+    annual_savings_inr: float
+    net_cost_inr: float
+    payback_years: float
+    subsidy_inr: float
+    co2_offset_kg: float          # Dashboard sends co2_offset_kg_per_year as co2_offset_kg
+
+
+def _fmt_inr(value: float) -> str:
+    return f"₹{value:,.0f}"
+
+
+def _build_pdf(filepath: str, req: ReportRequest) -> None:
+    doc = SimpleDocTemplate(
+        filepath, pagesize=A4,
+        rightMargin=2 * cm, leftMargin=2 * cm,
+        topMargin=2 * cm, bottomMargin=2 * cm,
+    )
+    styles = getSampleStyleSheet()
+    story = []
+
+    # ── Header ──────────────────────────────────────────────────────────────
+    title_style = ParagraphStyle(
+        "title", parent=styles["Title"],
+        fontSize=20, textColor=colors.HexColor("#1565C0"), spaceAfter=6,
+    )
+    story.append(Paragraph("GreenLens Energy Yield Certificate", title_style))
+    story.append(Paragraph(
+        "This document certifies the estimated solar energy yield for the property below.",
+        styles["Normal"],
+    ))
+    story.append(Spacer(1, 0.4 * cm))
+
+    # ── Property details ─────────────────────────────────────────────────────
+    story.append(Paragraph("Property Details", styles["Heading2"]))
+    prop_table = Table(
+        [["Owner Name", req.name], ["Address", req.address], ["City", req.city]],
+        colWidths=[5 * cm, 12 * cm],
+    )
+    prop_table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#E3F2FD")),
+        ("FONTNAME",   (0, 0), (-1, -1), "Helvetica"),
+        ("FONTSIZE",   (0, 0), (-1, -1), 10),
+        ("GRID",       (0, 0), (-1, -1), 0.5, colors.grey),
+        ("PADDING",    (0, 0), (-1, -1), 6),
+    ]))
+    story.append(prop_table)
+    story.append(Spacer(1, 0.4 * cm))
+
+    # ── Energy yield ─────────────────────────────────────────────────────────
+    story.append(Paragraph("Energy Yield Projection", styles["Heading2"]))
+    yield_table = Table(
+        [
+            ["Parameter",         "Value"],
+            ["System Capacity",   f"{req.capacity_kw} kW"],
+            ["Annual Generation", f"{req.annual_kwh:.0f} kWh/year"],
+            ["Annual Savings",    _fmt_inr(req.annual_savings_inr)],
+            ["CO₂ Offset",        f"{req.co2_offset_kg:.0f} kg/year"],
+            ["Payback Period",    f"{req.payback_years} years"],
+        ],
+        colWidths=[8 * cm, 9 * cm],
+    )
+    yield_table.setStyle(TableStyle([
+        ("BACKGROUND",   (0, 0), (-1, 0),  colors.HexColor("#1565C0")),
+        ("TEXTCOLOR",    (0, 0), (-1, 0),  colors.white),
+        ("FONTNAME",     (0, 0), (-1, 0),  "Helvetica-Bold"),
+        ("ROWBACKGROUNDS",(0, 1),(-1, -1), [colors.white, colors.HexColor("#E3F2FD")]),
+        ("GRID",         (0, 0), (-1, -1), 0.5, colors.grey),
+        ("FONTNAME",     (0, 1), (-1, -1), "Helvetica"),
+        ("FONTSIZE",     (0, 0), (-1, -1), 10),
+        ("PADDING",      (0, 0), (-1, -1), 7),
+    ]))
+    story.append(yield_table)
+    story.append(Spacer(1, 0.4 * cm))
+
+    # ── Subsidy ───────────────────────────────────────────────────────────────
+    story.append(Paragraph("PM Surya Ghar Subsidy Eligibility", styles["Heading2"]))
+    total_cost = req.net_cost_inr + req.subsidy_inr   # matches Dashboard cost-box
+    sub_table = Table(
+        [
+            ["Total System Cost",       _fmt_inr(total_cost)],
+            ["PM Surya Ghar Subsidy",   _fmt_inr(req.subsidy_inr)],
+            ["Net Cost After Subsidy",  _fmt_inr(req.net_cost_inr)],
+        ],
+        colWidths=[8 * cm, 9 * cm],
+    )
+    sub_table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#E8F5E9")),
+        ("FONTNAME",   (0, -1), (-1, -1), "Helvetica-Bold"),
+        ("GRID",       (0, 0), (-1, -1), 0.5, colors.grey),
+        ("FONTSIZE",   (0, 0), (-1, -1), 10),
+        ("PADDING",    (0, 0), (-1, -1), 7),
+    ]))
+    story.append(sub_table)
+    story.append(Spacer(1, 0.6 * cm))
+
+    # ── Footer ────────────────────────────────────────────────────────────────
+    note_style = ParagraphStyle("note", parent=styles["Normal"], fontSize=8, textColor=colors.grey)
+    story.append(Paragraph(
+        "This certificate is generated by GreenLens using NASA POWER irradiance data and MNRE "
+        "guidelines. Actual yields may vary by ±10% based on site conditions. This document may "
+        "be submitted to banks and NBFCs for solar loan applications under the PM Surya Ghar "
+        "Muft Bijli Yojana.",
+        note_style,
+    ))
+
+    doc.build(story)
+
+
+@router.post("/report/generate")
+def generate_report(req: ReportRequest):
+    """Generate a bankable PDF energy yield certificate."""
+    os.makedirs(REPORTS_DIR, exist_ok=True)
+    filename = f"greenlens_report_{uuid.uuid4().hex[:8]}.pdf"
+    filepath = os.path.join(REPORTS_DIR, filename)
+
+    try:
+        _build_pdf(filepath, req)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"PDF generation failed: {exc}")
+
+    # Return the download URL that Dashboard.jsx constructs as:
+    # window.open("http://localhost:8000" + data.download_url, "_blank")
+    return {"download_url": f"/api/report/download/{filename}", "filename": filename}
+
+
+@router.get("/report/download/{filename}")
+def download_report(filename: str):
+    """Serve a previously generated PDF report."""
+    # Guard against path-traversal attacks
+    if not SAFE_FILENAME_RE.match(filename):
+        raise HTTPException(status_code=400, detail="Invalid filename")
+
+    path = os.path.join(REPORTS_DIR, filename)
+    if not os.path.exists(path):
+        raise HTTPException(status_code=404, detail="Report not found")
+
+    return FileResponse(path, media_type="application/pdf", filename=filename)
