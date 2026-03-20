@@ -28,6 +28,7 @@ body {
   width: 100%;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 16px;
 }
 
@@ -391,9 +392,6 @@ body {
   color: #aaa;
   text-align: center;
 }
-
-/* Cost */
-.cost-box { }
 
 .cost-row {
   display: flex;
