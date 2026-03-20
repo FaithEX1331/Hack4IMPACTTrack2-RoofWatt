@@ -71,7 +71,6 @@ export default function App() {
               </div>
             </div>
           </div>
-          <span className="tagline">Hyperlocal solar intelligence</span>
           <div className="step-indicator">
             {STEPS.map((label, i) => (
               <div key={i} className={`step ${step === i + 1 ? "active" : step > i + 1 ? "done" : ""}`}>
