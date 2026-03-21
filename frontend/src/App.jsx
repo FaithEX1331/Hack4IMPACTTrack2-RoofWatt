@@ -1,11 +1,12 @@
 import { useState } from "react";
+import HomePage from "./components/HomePage";
 import MapSketch from "./components/MapSketch";
 import InputForm from "./components/InputForm";
 import Dashboard from "./components/Dashboard";
 import "./App.css";
 
 export default function App() {
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(0); // 0 = home, 1 = map, 2 = form, 3 = dashboard
   const [rooftopData, setRooftopData] = useState(null);
   const [formData, setFormData] = useState(null);
   const [results, setResults] = useState(null);
@@ -42,35 +43,47 @@ export default function App() {
   };
 
   const handleReset = () => {
-    setStep(1); setRooftopData(null); setFormData(null); setResults(null);
+    setStep(0); setRooftopData(null); setFormData(null); setResults(null);
   };
 
   const STEPS = ["Pin location", "Your details", "Solar report"];
+
+  // On the homepage (step 0), render full-page with no app-header
+  if (step === 0) {
+    return <HomePage onStart={() => setStep(1)} />;
+  }
 
   return (
     <div>
       <header className="app-header">
         <div className="header-inner">
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <svg width="36" height="36" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
-              <rect width="80" height="80" rx="16" fill="rgba(255,255,255,0.15)" />
-              <polyline points="14,22 26,58 40,34 54,58 66,22"
-                fill="none" stroke="#f5a623" strokeWidth="7"
-                strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M26,22 A20,20 0 0,1 54,22"
-                fill="none" stroke="#a5d6a7" strokeWidth="4" strokeLinecap="round" />
-              <circle cx="40" cy="14" r="6" fill="#f5a623" />
-            </svg>
-            <div>
-              <div style={{ fontSize: "16px", fontWeight: 600, lineHeight: 1.2, letterSpacing: "-0.3px" }}>
-                <span style={{ color: "#fff" }}>Green</span>
-                <span style={{ color: "#a5d6a7" }}>Lens</span>
-              </div>
-              <div style={{ fontSize: "9px", color: "rgba(255,255,255,0.6)", letterSpacing: "1px" }}>
-                SOLAR INTELLIGENCE
+          {/* Logo — clicking returns to homepage */}
+          <button
+            onClick={handleReset}
+            style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <svg width="36" height="36" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+                <rect width="80" height="80" rx="16" fill="rgba(255,255,255,0.15)" />
+                <polyline points="14,22 26,58 40,34 54,58 66,22"
+                  fill="none" stroke="#f5a623" strokeWidth="7"
+                  strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M26,22 A20,20 0 0,1 54,22"
+                  fill="none" stroke="#a5d6a7" strokeWidth="4" strokeLinecap="round" />
+                <circle cx="40" cy="14" r="6" fill="#f5a623" />
+              </svg>
+              <div>
+                <div style={{ fontSize: "16px", fontWeight: 600, lineHeight: 1.2, letterSpacing: "-0.3px" }}>
+                  <span style={{ color: "#fff" }}>Green</span>
+                  <span style={{ color: "#a5d6a7" }}>Lens</span>
+                </div>
+                <div style={{ fontSize: "9px", color: "rgba(255,255,255,0.6)", letterSpacing: "1px" }}>
+                  SOLAR INTELLIGENCE
+                </div>
               </div>
             </div>
-          </div>
+          </button>
+
           <div className="step-indicator">
             {STEPS.map((label, i) => (
               <div key={i} className={`step ${step === i + 1 ? "active" : step > i + 1 ? "done" : ""}`}>
