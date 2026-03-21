@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import logo from "../assets/logo.svg";
 import "./HomePage.css";
 
 const STEPS_DATA = [
@@ -139,28 +140,41 @@ export default function HomePage({ onStart }) {
   return (
     <div className="hp-root">
 
+      {/* ── NAV ── */}
+      <nav className="hp-nav">
+        <img src={logo} alt="GreenLens" className="hp-nav-logo" />
+        <div className="hp-nav-links">
+          <a href="#hp-how">How it works</a>
+          <a href="#hp-cities">Cities</a>
+          <a href="#hp-subsidy">Subsidies</a>
+          <button className="hp-nav-cta" onClick={onStart}>Get your report →</button>
+        </div>
+      </nav>
+
       {/* ── HERO ── */}
       <section className="hp-hero" ref={heroRef}>
         <div className="hp-hero-bg" />
         <div className="hp-hero-sun" />
 
-        <span className="hp-badge hp-fade-up">
+        <img src={logo} alt="GreenLens" className="hp-hero-logo hp-fade-up" />
+
+        <span className="hp-badge hp-fade-up hp-d1">
           <span className="hp-badge-dot" />
           Built for Hack4IMPACT · PM Surya Ghar ready
         </span>
 
-        <h1 className="hp-h1 hp-fade-up hp-d1">
+        <h1 className="hp-h1 hp-fade-up hp-d2">
           Know <em>exactly</em> what your<br />
           rooftop can generate.
         </h1>
 
-        <p className="hp-sub hp-fade-up hp-d2">
+        <p className="hp-sub hp-fade-up hp-d3">
           GreenLens gives every Indian homeowner, lender, and installer a
           precise, site-specific solar yield estimate — backed by NASA
           satellite data and real DISCOM tariffs.
         </p>
 
-        <div className="hp-hero-actions hp-fade-up hp-d3">
+        <div className="hp-hero-actions hp-fade-up hp-d4">
           <button className="hp-btn-primary" onClick={onStart}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
@@ -325,6 +339,7 @@ export default function HomePage({ onStart }) {
       {/* ── CTA ── */}
       <div className="hp-cta">
         <div className="hp-cta-glow" />
+        <img src={logo} alt="GreenLens" className="hp-cta-logo hp-reveal" />
         <h2 className="hp-cta-h2 hp-reveal">Your rooftop is ready.<br /><em>Is your report?</em></h2>
         <p className="hp-cta-sub hp-reveal">
           Get a precise, site-specific solar analysis in under 3 minutes. No signup required.
@@ -333,6 +348,17 @@ export default function HomePage({ onStart }) {
           Start free analysis →
         </button>
       </div>
+
+      {/* ── FOOTER ── */}
+      <footer className="hp-footer">
+        <img src={logo} alt="GreenLens" className="hp-footer-logo" />
+        <p>© 2025 GreenLens · RoofWatt · Hack4IMPACT Track 2</p>
+        <div className="hp-footer-links">
+          <a href="#hp-how">How it works</a>
+          <a href="#hp-cities">Cities</a>
+          <a href="#hp-subsidy">Subsidies</a>
+        </div>
+      </footer>
 
     </div>
   );

@@ -61,13 +61,13 @@
 
 /* ── HERO ── */
 .hp-hero {
-  min-height: calc(100vh - 52px); /* subtract app-header height */
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 80px 5vw 72px;
+  padding: 100px 5vw 72px; /* 100px top = 60px nav + breathing room */
   position: relative;
   overflow: hidden;
 }
@@ -487,3 +487,74 @@
   .hp-h1            { letter-spacing: -0.5px; }
   .hp-preview-stats { grid-template-columns: repeat(3, 1fr); }
 }
+
+/* ── NAV ── */
+.hp-nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 5vw; height: 60px;
+  background: rgba(240,247,240,0.9);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--hp-border);
+}
+.hp-nav-logo {
+  height: 30px; width: auto;
+}
+.hp-nav-links {
+  display: flex; align-items: center; gap: 28px;
+}
+.hp-nav-links a {
+  text-decoration: none; font-size: 13px; font-weight: 400;
+  color: var(--hp-ink-2); transition: color .18s;
+}
+.hp-nav-links a:hover { color: var(--hp-leaf); }
+.hp-nav-cta {
+  background: var(--hp-coal); color: #fff;
+  border: none; padding: 8px 18px; border-radius: 7px;
+  font-family: inherit; font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: background .18s, transform .12s;
+}
+.hp-nav-cta:hover { background: var(--hp-coal-2); transform: translateY(-1px); }
+
+/* ── HERO LOGO ── */
+.hp-hero-logo {
+  height: 38px; width: auto;
+  margin-bottom: 20px;
+  position: relative; z-index: 1;
+  opacity: 0.92;
+}
+
+/* ── CTA LOGO ── */
+.hp-cta-logo {
+  height: 32px; width: auto;
+  filter: brightness(0) invert(1);
+  opacity: 0.4;
+  margin: 0 auto 24px;
+  display: block;
+  position: relative; z-index: 1;
+}
+
+/* ── FOOTER ── */
+.hp-footer {
+  background: var(--hp-coal-2);
+  padding: 32px 5vw;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 16px;
+}
+.hp-footer-logo {
+  height: 26px; width: auto;
+  filter: brightness(0) invert(1);
+  opacity: 0.5;
+}
+.hp-footer p {
+  font-size: 12px; color: rgba(255,255,255,0.3);
+}
+.hp-footer-links {
+  display: flex; gap: 20px;
+}
+.hp-footer-links a {
+  font-size: 12px; color: rgba(255,255,255,0.3);
+  text-decoration: none; transition: color .18s;
+}
+.hp-footer-links a:hover { color: rgba(255,255,255,0.65); }
