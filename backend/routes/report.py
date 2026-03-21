@@ -66,6 +66,9 @@ class ReportRequest(BaseModel):
     lifetime_savings_inr: float = 0
     lifetime_years: int = 25
     net_roi_pct: float = 0
+    tariff_per_kwh: float = 6.5
+    bill_coverage_pct: float = 0
+    connection_type: str = "residential"
 
 
 def _inr(v: float) -> str:
@@ -262,9 +265,11 @@ def _build_pdf(filepath: str, req: ReportRequest) -> None:
         [Paragraph(f"FINANCIAL RETURNS ({req.lifetime_years}-YEAR PROJECTION)",
                    _ps("sc3", font="DVB", size=8, color=G_MID)),
          Paragraph("", _ps("sc3s")), Paragraph("", _ps("sc3a"))],
-        cr("Annual Electricity Savings",          "", _inr(req.annual_savings_inr)),
-        cr(f"Lifetime Savings ({req.lifetime_years} yrs)", "", _inr(req.lifetime_savings_inr)),
-        cr(f"Net ROI over {req.lifetime_years} years",     "", f"+{req.net_roi_pct}%", bold=True, hi=True),
+        cr("Annual Electricity Savings",                        "", _inr(req.annual_savings_inr)),
+        cr(f"Tariff Rate ({req.connection_type.capitalize()})", "", f"\u20b9{req.tariff_per_kwh}/kWh"),
+        cr("Bill Coverage by Solar",                           "", f"{req.bill_coverage_pct}%"),
+        cr(f"Lifetime Savings ({req.lifetime_years} yrs)",     "", _inr(req.lifetime_savings_inr)),
+        cr(f"Net ROI over {req.lifetime_years} years",         "", f"+{req.net_roi_pct}%", bold=True, hi=True),
     ]
 
     # Row backgrounds: section headers get G_LIGHT, subsection rows alternate
@@ -273,7 +278,7 @@ def _build_pdf(filepath: str, req: ReportRequest) -> None:
     for i, _ in enumerate(cost_rows):
         if i in section_rows:
             row_bgs.append(G_LIGHT)
-        elif i in {9, 13}:  # totals
+        elif i in {9, 15}:  # totals (Net Cost After Subsidy, Net ROI)
             row_bgs.append(colors.HexColor("#eaf5ea"))
         else:
             row_bgs.append(WHITE if i % 2 == 0 else colors.HexColor("#f4fbf4"))
@@ -282,7 +287,7 @@ def _build_pdf(filepath: str, req: ReportRequest) -> None:
     cost_style = [
         ("GRID",          (0,0),  (-1,-1), 0.4, GREY_B),
         ("LINEABOVE",     (0,9),  (-1,9),  1.2, G_DARK),
-        ("LINEABOVE",     (0,13), (-1,13), 1.2, G_DARK),
+        ("LINEABOVE",     (0,15), (-1,15), 1.2, G_DARK),
         ("TOPPADDING",    (0,0),  (-1,-1), 6),
         ("BOTTOMPADDING", (0,0),  (-1,-1), 6),
         ("LEFTPADDING",   (0,0),  (0,-1),  10),

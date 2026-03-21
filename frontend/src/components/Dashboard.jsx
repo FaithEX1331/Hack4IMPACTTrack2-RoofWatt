@@ -99,6 +99,9 @@ export default function Dashboard({ results, formData, rooftopData, onReset }) {
         lifetime_savings_inr: results.lifetime_savings_inr,
         lifetime_years: results.lifetime_years,
         net_roi_pct: results.net_roi_pct,
+        tariff_per_kwh: results.tariff_per_kwh,
+        bill_coverage_pct: results.bill_coverage_pct,
+        connection_type: results.connection_type,
       }),
     });
     const data = await res.json();
