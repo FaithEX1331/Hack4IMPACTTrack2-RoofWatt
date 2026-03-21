@@ -45,11 +45,14 @@ export default function Dashboard({ results, formData, rooftopData, onReset }) {
     }],
   };
 
-  // FIX 2: Don't force y-axis to start at 0. All monthly values cluster between
-  // ~8,000–15,000 kWh. Starting from 0 flattens the bars and hides real variation.
-  // Use a padded minimum so differences are clearly visible.
+  // Snap y-axis to clean 1k boundaries so ticks never duplicate.
+  // Root cause: when Chart.js picks a non-1000 step (e.g. 400 or 500),
+  // values like 7000 and 7400 both round to "7k kWh" via toFixed(0).
+  // Fix: force stepSize:1000 and snap min/max to the nearest 1k grid.
   const minVal = Math.min(...monthlyData);
-  const yMin = Math.max(0, Math.floor(minVal * 0.85 / 1000) * 1000);
+  const maxVal = Math.max(...monthlyData);
+  const yMin = Math.max(0, Math.floor(minVal / 1000) * 1000 - 1000);
+  const yMax = Math.ceil(maxVal / 1000) * 1000 + 1000;
 
   const chartOptions = {
     responsive: true,
@@ -69,9 +72,14 @@ export default function Dashboard({ results, formData, rooftopData, onReset }) {
       x: { grid: { display: false }, ticks: { color: "#aaa", font: { size: 11 } } },
       y: {
         grid: { color: "#f0f7f0" },
-        ticks: { color: "#aaa", font: { size: 11 }, callback: v => (v / 1000).toFixed(0) + "k kWh" },
         min: yMin,
-        // beginAtZero removed — replaced with dynamic yMin above
+        max: yMax,
+        ticks: {
+          color: "#aaa",
+          font: { size: 11 },
+          stepSize: 1000,
+          callback: v => (v / 1000) + "k kWh",
+        },
       },
     },
   };
