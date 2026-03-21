@@ -5,11 +5,9 @@ import os
 
 app = FastAPI(title="GreenLens API", version="1.0.0")
 
-# Restrict CORS to known frontend origins; fall back to permissive in dev.
-# Set ALLOWED_ORIGINS env var as comma-separated URLs in production.
 ALLOWED_ORIGINS = os.getenv(
     "ALLOWED_ORIGINS",
-    "http://localhost:3000,http://localhost:5173"
+    "http://localhost:3000,http://localhost:5173,https://green-lens-roof-watt.vercel.app"
 ).split(",")
 
 app.add_middleware(

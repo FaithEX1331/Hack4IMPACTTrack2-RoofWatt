@@ -1,4 +1,5 @@
 import { Bar } from "react-chartjs-2";
+import { useState, useEffect } from "react";
 import {
   Chart as ChartJS, CategoryScale, LinearScale,
   BarElement, Tooltip, Legend
@@ -21,6 +22,16 @@ const STATS = [
 ];
 
 export default function Dashboard({ results, formData, rooftopData, onReset }) {
+  const [installers, setInstallers] = useState([]);
+
+  useEffect(() => {
+    const city = formData?.city || results.city || "Bhubaneswar";
+    fetch(`${API}/api/installers?city=${encodeURIComponent(city)}`)
+      .then(r => r.json())
+      .then(d => setInstallers(d.installers || []))
+      .catch(() => {});
+  }, [results.city, formData?.city]);
+
   const monthlyData = MONTHS.map((_, i) => {
     const key = String(i + 1).padStart(2, "0");
     return results.monthly_generation_kwh?.[key] || 0;
@@ -218,6 +229,50 @@ export default function Dashboard({ results, formData, rooftopData, onReset }) {
             <span style={{ color: "#1e6b2e" }}>+{results.net_roi_pct}%</span>
           </div>
         </div>
+
+        {installers.length > 0 && (
+          <div className="cost-box">
+            <div className="box-label" style={{ marginBottom: 10 }}>
+              MNRE-verified installers near you
+            </div>
+            {installers.map(inst => (
+              <div key={inst.id} style={{
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                padding: "12px 0", borderBottom: "1px solid #e8f5e9",
+              }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ marginBottom: 3 }}>
+                    <a
+                      href={inst.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ fontWeight: 600, fontSize: 14, color: "#1e6b2e", textDecoration: "none" }}
+                    >
+                      {inst.name} ↗
+                    </a>
+                    {inst.mnre_certified && (
+                      <span style={{
+                        marginLeft: 8, fontSize: 10, background: "#e8f5e9",
+                        color: "#1e6b2e", border: "1px solid #a5d6a7",
+                        borderRadius: 4, padding: "1px 6px", fontWeight: 600,
+                      }}>
+                        ✓ MNRE
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 12, color: "#888" }}>
+                    📍 {inst.city} &nbsp;·&nbsp; {inst.experience_years} yrs experience
+                  </div>
+                </div>
+                <div style={{ textAlign: "right", marginLeft: 12 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "#f5a623" }}>
+                    {"★".repeat(Math.round(inst.rating))} <span style={{ color: "#555", fontWeight: 400 }}>{inst.rating}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         <div className="dash-actions">
           <button className="btn-primary flex1" onClick={handleDownload}>

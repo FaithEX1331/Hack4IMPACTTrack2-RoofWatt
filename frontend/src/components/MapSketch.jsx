@@ -33,7 +33,7 @@ export default function MapSketch({ onDone }) {
     setCenter([centroid.lat, centroid.lng]);
   };
 
-  const handleDeleted = () => setArea(null);
+  const handleDeleted = () => { setArea(null); setCenter(DEFAULT_CENTER); };
 
   const handleConfirm = () => {
     if (!area) return alert("Please draw your rooftop first.");
@@ -66,8 +66,6 @@ export default function MapSketch({ onDone }) {
         q: searchQuery,
         limit: 1,
         countrycodes: "in",
-        viewbox: "85.75,20.18,85.95,20.40",  // Bhubaneswar bounding box
-        bounded: 0,
       });
       const res = await fetch(
         `https://nominatim.openstreetmap.org/search?${params}`,
@@ -75,7 +73,7 @@ export default function MapSketch({ onDone }) {
       );
       const data = await res.json();
       if (!data.length) {
-        setSearchError("Address not found. Try: 'KIIT University, Bhubaneswar'");
+        setSearchError("Address not found. Try adding the city name, e.g. 'KIIT University, Bhubaneswar'");
       } else {
         setFlyTo([parseFloat(data[0].lat), parseFloat(data[0].lon)]);
         setSearchQuery(data[0].display_name.split(",").slice(0, 3).join(","));
