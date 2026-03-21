@@ -14,9 +14,6 @@ __pycache__/
 env/
 venv/
 
-# Ignore all JSON files
-*.json
-
 # But keep these specific ones
 !frontend/package.json
 !frontend/package-lock.json
