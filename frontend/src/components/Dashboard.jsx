@@ -28,9 +28,11 @@ export default function Dashboard({ results, formData, rooftopData, onReset }) {
     labels: MONTHS,
     datasets: [{
       data: monthlyData,
-      backgroundColor: monthlyData.map((_, i) =>
-        i >= 2 && i <= 5 ? "#1e6b2e" : "#b6d9b6"
-      ),
+      backgroundColor: (() => {
+        const sorted = [...monthlyData].sort((a, b) => b - a);
+        const threshold = sorted[2]; // top 3 months get dark highlight
+        return monthlyData.map(v => v >= threshold ? "#1e6b2e" : "#b6d9b6");
+      })(),
       borderRadius: 2,
       borderSkipped: false,
     }],

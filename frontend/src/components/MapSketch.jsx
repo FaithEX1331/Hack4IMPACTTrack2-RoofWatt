@@ -60,13 +60,22 @@ export default function MapSketch({ onDone }) {
     setSearchLoading(true);
     setSearchError("");
     try {
+      // Add viewbox around Bhubaneswar + bounded=0 so it still searches outside if needed
+      const params = new URLSearchParams({
+        format: "json",
+        q: searchQuery,
+        limit: 1,
+        countrycodes: "in",
+        viewbox: "85.75,20.18,85.95,20.40",  // Bhubaneswar bounding box
+        bounded: 0,
+      });
       const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=1&countrycodes=in`,
+        `https://nominatim.openstreetmap.org/search?${params}`,
         { headers: { "Accept-Language": "en" } }
       );
       const data = await res.json();
       if (!data.length) {
-        setSearchError("Address not found. Try a more specific query.");
+        setSearchError("Address not found. Try: 'KIIT University, Bhubaneswar'");
       } else {
         setFlyTo([parseFloat(data[0].lat), parseFloat(data[0].lon)]);
         setSearchQuery(data[0].display_name.split(",").slice(0, 3).join(","));
@@ -117,7 +126,7 @@ export default function MapSketch({ onDone }) {
       <MapContainer center={DEFAULT_CENTER} zoom={DEFAULT_ZOOM} style={{ height: 420, width: "100%" }}>
         <TileLayer
           url="https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
-          subdomains={["mt0","mt1","mt2","mt3"]}
+          subdomains={["mt0", "mt1", "mt2", "mt3"]}
           attribution="Google Satellite"
           maxZoom={21}
         />

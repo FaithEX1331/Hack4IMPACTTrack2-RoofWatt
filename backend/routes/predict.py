@@ -14,7 +14,7 @@ DUST_LOSS           = 0.05
 USABLE_AREA_RATIO   = 0.75   # matches InputForm: "~{area * 0.75} m² usable"
 DAYS_PER_MONTH      = 30
 TARIFF_PER_KWH      = 6.5    # INR
-COST_PER_SQM        = 35_000 # INR
+COST_PER_KW         = 60_000 # INR per kW installed (industry avg India 2024)
 
 FALLBACK_GHI = {
     "01": 5.2, "02": 5.8, "03": 6.1, "04": 6.3,
@@ -86,11 +86,11 @@ def predict_solar(req: PredictRequest):
 
     annual_kwh      = sum(monthly_generation.values())
     annual_savings  = round(annual_kwh * TARIFF_PER_KWH, 0)
-    system_cost     = round(effective_area * COST_PER_SQM, 0)
     capacity_kw     = round(effective_area * PANEL_EFFICIENCY, 2)
+    system_cost     = round(capacity_kw * COST_PER_KW, 0)   # cost based on kW, not area
     subsidy         = _subsidy(capacity_kw)
     net_cost        = system_cost - subsidy
-    payback_years   = round(system_cost / annual_savings, 1) if annual_savings > 0 else 0
+    payback_years   = round(net_cost / annual_savings, 1) if annual_savings > 0 else 0  # use net cost
 
     return {
         # Monthly breakdown consumed directly by Dashboard bar chart
