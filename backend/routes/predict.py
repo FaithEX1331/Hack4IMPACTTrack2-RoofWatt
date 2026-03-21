@@ -87,23 +87,41 @@ def predict_solar(req: PredictRequest):
     annual_kwh      = sum(monthly_generation.values())
     annual_savings  = round(annual_kwh * TARIFF_PER_KWH, 0)
     capacity_kw     = round(effective_area * PANEL_EFFICIENCY, 2)
-    system_cost     = round(capacity_kw * COST_PER_KW, 0)   # cost based on kW, not area
+    system_cost     = round(capacity_kw * COST_PER_KW, 0)
     subsidy         = _subsidy(capacity_kw)
     net_cost        = system_cost - subsidy
-    payback_years   = round(net_cost / annual_savings, 1) if annual_savings > 0 else 0  # use net cost
+    payback_years   = round(net_cost / annual_savings, 1) if annual_savings > 0 else 0
+
+    # Detailed cost breakdown (industry-standard India ratios)
+    panel_cost    = round(system_cost * 0.42)
+    inverter_cost = round(system_cost * 0.18)
+    installation  = round(system_cost * 0.15)
+    bos_cost      = round(system_cost * 0.15)
+    misc_cost     = int(system_cost) - panel_cost - inverter_cost - installation - bos_cost
+
+    lifetime_years   = 25
+    lifetime_savings = round(annual_savings * lifetime_years, 0)
+    net_roi_pct      = round((lifetime_savings - net_cost) / net_cost * 100, 1) if net_cost > 0 else 0
 
     return {
-        # Monthly breakdown consumed directly by Dashboard bar chart
-        "monthly_generation_kwh": monthly_generation,
-        # Summary stats shown in Dashboard STATS grid
-        "annual_generation_kwh": round(annual_kwh, 1),
-        "capacity_kw":           capacity_kw,
-        "annual_savings_inr":    annual_savings,
-        "system_cost_inr":       system_cost,
-        "subsidy_inr":           subsidy,
-        "net_cost_inr":          net_cost,
-        "payback_years":         payback_years,
-        # CO₂ offset card (key used verbatim by Dashboard)
-        "co2_offset_kg_per_year": round(annual_kwh * 0.82, 1),
-        "city": req.city,
+        "monthly_generation_kwh":  monthly_generation,
+        "annual_generation_kwh":   round(annual_kwh, 1),
+        "capacity_kw":             capacity_kw,
+        "annual_savings_inr":      annual_savings,
+        "system_cost_inr":         system_cost,
+        "subsidy_inr":             subsidy,
+        "net_cost_inr":            net_cost,
+        "payback_years":           payback_years,
+        "co2_offset_kg_per_year":  round(annual_kwh * 0.82, 1),
+        "city":                    req.city,
+        "cost_breakdown": {
+            "solar_panels_inr": panel_cost,
+            "inverter_inr":     inverter_cost,
+            "installation_inr": installation,
+            "bos_wiring_inr":   bos_cost,
+            "misc_inr":         misc_cost,
+        },
+        "lifetime_savings_inr": lifetime_savings,
+        "lifetime_years":       lifetime_years,
+        "net_roi_pct":          net_roi_pct,
     }

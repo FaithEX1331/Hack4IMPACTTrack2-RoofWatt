@@ -9,6 +9,9 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const API = process.env.REACT_APP_API_URL || "http://localhost:8000";
 
+// Cities that have real irradiance data files in the backend
+const SUPPORTED_CITIES = ["bhubaneswar", "cuttack", "delhi", "mumbai", "chennai", "bangalore", "kolkata", "jaipur", "hyderabad", "lucknow", "patna"];
+
 const STATS = [
   { key: "capacity_kw", label: "Capacity", fmt: v => `${v} kW`, accent: "#1e6b2e" },
   { key: "annual_generation_kwh", label: "Generation/yr", fmt: v => `${v} kWh`, accent: "#3b8c3b" },
@@ -24,19 +27,30 @@ export default function Dashboard({ results, formData, rooftopData, onReset }) {
     return results.monthly_generation_kwh?.[key] || 0;
   });
 
+  // FIX 1: Highlight exactly the top 3 months by rank, not by threshold comparison.
+  // The old `v >= threshold` caused ties to over-highlight (e.g. 4+ dark bars).
+  const top3Indices = [...monthlyData]
+    .map((v, i) => ({ v, i }))
+    .sort((a, b) => b.v - a.v)
+    .slice(0, 3)
+    .map(x => x.i);
+  const top3Set = new Set(top3Indices);
+
   const chartData = {
     labels: MONTHS,
     datasets: [{
       data: monthlyData,
-      backgroundColor: (() => {
-        const sorted = [...monthlyData].sort((a, b) => b - a);
-        const threshold = sorted[2]; // top 3 months get dark highlight
-        return monthlyData.map(v => v >= threshold ? "#1e6b2e" : "#b6d9b6");
-      })(),
+      backgroundColor: monthlyData.map((_, i) => top3Set.has(i) ? "#1e6b2e" : "#b6d9b6"),
       borderRadius: 2,
       borderSkipped: false,
     }],
   };
+
+  // FIX 2: Don't force y-axis to start at 0. All monthly values cluster between
+  // ~8,000–15,000 kWh. Starting from 0 flattens the bars and hides real variation.
+  // Use a padded minimum so differences are clearly visible.
+  const minVal = Math.min(...monthlyData);
+  const yMin = Math.max(0, Math.floor(minVal * 0.85 / 1000) * 1000);
 
   const chartOptions = {
     responsive: true,
@@ -49,14 +63,22 @@ export default function Dashboard({ results, formData, rooftopData, onReset }) {
         titleColor: "#1a1a1a",
         bodyColor: "#6b6b6b",
         padding: 10,
-        callbacks: { label: ctx => ` ${ctx.raw} kWh` },
+        callbacks: { label: ctx => ` ${ctx.raw.toLocaleString()} kWh` },
       },
     },
     scales: {
       x: { grid: { display: false }, ticks: { color: "#aaa", font: { size: 11 } } },
-      y: { grid: { color: "#f0f7f0" }, ticks: { color: "#aaa", font: { size: 11 }, callback: v => v + " kWh" }, beginAtZero: true },
+      y: {
+        grid: { color: "#f0f7f0" },
+        ticks: { color: "#aaa", font: { size: 11 }, callback: v => (v / 1000).toFixed(0) + "k kWh" },
+        min: yMin,
+        // beginAtZero removed — replaced with dynamic yMin above
+      },
     },
   };
+
+  // FIX 3: Warn when city has no real irradiance data and fallback GHI was used.
+  const usingFallback = !SUPPORTED_CITIES.includes((results.city || "").toLowerCase());
 
   const handleDownload = async () => {
     const res = await fetch(`${API}/api/report/generate`, {
@@ -69,10 +91,15 @@ export default function Dashboard({ results, formData, rooftopData, onReset }) {
         capacity_kw: results.capacity_kw,
         annual_kwh: results.annual_generation_kwh,
         annual_savings_inr: results.annual_savings_inr,
+        system_cost_inr: results.system_cost_inr,
         net_cost_inr: results.net_cost_inr,
         payback_years: results.payback_years,
         subsidy_inr: results.subsidy_inr,
         co2_offset_kg: results.co2_offset_kg_per_year,
+        cost_breakdown: results.cost_breakdown,
+        lifetime_savings_inr: results.lifetime_savings_inr,
+        lifetime_years: results.lifetime_years,
+        net_roi_pct: results.net_roi_pct,
       }),
     });
     const data = await res.json();
@@ -102,14 +129,48 @@ export default function Dashboard({ results, formData, rooftopData, onReset }) {
 
         <div className="chart-box">
           <div className="box-label">Monthly generation forecast</div>
+          {usingFallback && (
+            <div style={{
+              background: "#fffbe6", border: "1px solid #f5c842",
+              borderRadius: 6, padding: "8px 12px", marginBottom: 10,
+              fontSize: 12, color: "#7a5c00", display: "flex", alignItems: "center", gap: 6
+            }}>
+              ⚠️ No solar irradiance data available for <strong>{results.city}</strong>.
+              Monthly forecast is estimated using regional averages and may be less accurate.
+            </div>
+          )}
           <Bar data={chartData} options={chartOptions} />
         </div>
 
         <div className="cost-box">
-          <div className="box-label" style={{ marginBottom: 6 }}>Cost breakdown</div>
+          <div className="box-label" style={{ marginBottom: 10 }}>Cost breakdown</div>
+
+          {/* System component costs */}
+          <div style={{ fontSize: 11, color: "#888", marginBottom: 4, fontWeight: 600, letterSpacing: "0.04em" }}>
+            SYSTEM COMPONENTS
+          </div>
+          {[
+            ["Solar Panels (42%)",          results.cost_breakdown?.solar_panels_inr],
+            ["Inverter (18%)",              results.cost_breakdown?.inverter_inr],
+            ["Installation & Civil (15%)",  results.cost_breakdown?.installation_inr],
+            ["BOS / Wiring / Mounting (15%)", results.cost_breakdown?.bos_wiring_inr],
+            ["Misc & Contingency (10%)",    results.cost_breakdown?.misc_inr],
+          ].map(([label, val]) => (
+            <div className="cost-row" key={label} style={{ fontSize: 13 }}>
+              <span style={{ color: "#555" }}>{label}</span>
+              <span>₹{val?.toLocaleString()}</span>
+            </div>
+          ))}
+
+          <div style={{ borderTop: "1.5px solid #d4e8d4", margin: "8px 0" }} />
+
+          {/* Subsidy and net cost */}
+          <div style={{ fontSize: 11, color: "#888", marginBottom: 4, fontWeight: 600, letterSpacing: "0.04em" }}>
+            SUBSIDY & NET COST
+          </div>
           <div className="cost-row">
             <span>Total system cost</span>
-            <span>₹{(results.net_cost_inr + results.subsidy_inr)?.toLocaleString()}</span>
+            <span>₹{results.system_cost_inr?.toLocaleString()}</span>
           </div>
           <div className="cost-row green">
             <span>PM Surya Ghar subsidy</span>
@@ -118,6 +179,25 @@ export default function Dashboard({ results, formData, rooftopData, onReset }) {
           <div className="cost-row total">
             <span>Net cost after subsidy</span>
             <span>₹{results.net_cost_inr?.toLocaleString()}</span>
+          </div>
+
+          <div style={{ borderTop: "1.5px solid #d4e8d4", margin: "8px 0" }} />
+
+          {/* Financial returns */}
+          <div style={{ fontSize: 11, color: "#888", marginBottom: 4, fontWeight: 600, letterSpacing: "0.04em" }}>
+            FINANCIAL RETURNS ({results.lifetime_years}-YEAR PROJECTION)
+          </div>
+          <div className="cost-row">
+            <span>Annual electricity savings</span>
+            <span>₹{results.annual_savings_inr?.toLocaleString()}</span>
+          </div>
+          <div className="cost-row">
+            <span>Lifetime savings ({results.lifetime_years} yrs)</span>
+            <span>₹{results.lifetime_savings_inr?.toLocaleString()}</span>
+          </div>
+          <div className="cost-row total">
+            <span>Net ROI over {results.lifetime_years} years</span>
+            <span style={{ color: "#1e6b2e" }}>+{results.net_roi_pct}%</span>
           </div>
         </div>
 

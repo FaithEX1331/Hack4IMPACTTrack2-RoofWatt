@@ -43,6 +43,13 @@ PAD  = 14        # narrow side margin for content
 IW   = W - PAD * 2
 
 
+class CostBreakdown(BaseModel):
+    solar_panels_inr: float = 0
+    inverter_inr: float = 0
+    installation_inr: float = 0
+    bos_wiring_inr: float = 0
+    misc_inr: float = 0
+
 class ReportRequest(BaseModel):
     name: str
     address: str
@@ -50,10 +57,15 @@ class ReportRequest(BaseModel):
     capacity_kw: float
     annual_kwh: float
     annual_savings_inr: float
+    system_cost_inr: float = 0
     net_cost_inr: float
     payback_years: float
     subsidy_inr: float
     co2_offset_kg: float
+    cost_breakdown: CostBreakdown = CostBreakdown()
+    lifetime_savings_inr: float = 0
+    lifetime_years: int = 25
+    net_roi_pct: float = 0
 
 
 def _inr(v: float) -> str:
@@ -222,29 +234,64 @@ def _build_pdf(filepath: str, req: ReportRequest) -> None:
     story.append(Spacer(1, 0.08*cm))
     total = req.net_cost_inr + req.subsidy_inr
 
-    def cr(label, sym, amount, bold=False, hi=False):
+    def cr(label, sym, amount, bold=False, hi=False, sub=False):
         fn = "DVB" if bold else "DV"
-        fg = G_DARK if hi else DARK_T
-        return [Paragraph(label,  _ps("cl"+label, font=fn, size=10, color=fg)),
-                Paragraph(sym,    _ps("cs"+label, font=fn, size=10, color=G_MID, align=1)),
-                Paragraph(amount, _ps("ca"+label, font=fn, size=10, color=fg, align=2))]
+        fg = G_DARK if hi else (GREY_T if sub else DARK_T)
+        sz = 9 if sub else 10
+        return [Paragraph(label,  _ps("cl"+label, font=fn, size=sz, color=fg)),
+                Paragraph(sym,    _ps("cs"+label, font=fn, size=sz, color=G_MID, align=1)),
+                Paragraph(amount, _ps("ca"+label, font=fn, size=sz, color=fg, align=2))]
 
-    cost = Table(
-        [cr("Total System Cost",      "",       _inr(total)),
-         cr("PM Surya Ghar Subsidy",  "\u2212", _inr(req.subsidy_inr)),
-         cr("Net Cost After Subsidy", "",       _inr(req.net_cost_inr), bold=True, hi=True)],
-        colWidths=[IW - PAD*2 - 7*cm, 1.2*cm, 5.8*cm])
-    cost.setStyle(TableStyle([
-        ("BACKGROUND",    (0,0),  (-1,-2), WHITE),
-        ("BACKGROUND",    (0,-1), (-1,-1), G_LIGHT),
+    cb = req.cost_breakdown
+    cost_rows = [
+        # Section header row
+        [Paragraph("SYSTEM COMPONENTS", _ps("sc1", font="DVB", size=8, color=G_MID)),
+         Paragraph("", _ps("sc1s")), Paragraph("", _ps("sc1a"))],
+        cr(f"  Solar Panels (42%)",            "", _inr(cb.solar_panels_inr), sub=True),
+        cr(f"  Inverter (18%)",                "", _inr(cb.inverter_inr),     sub=True),
+        cr(f"  Installation & Civil (15%)",    "", _inr(cb.installation_inr), sub=True),
+        cr(f"  BOS / Wiring / Mounting (15%)", "", _inr(cb.bos_wiring_inr),   sub=True),
+        cr(f"  Misc & Contingency (10%)",      "", _inr(cb.misc_inr),          sub=True),
+        # Subsidy section
+        [Paragraph("SUBSIDY & NET COST", _ps("sc2", font="DVB", size=8, color=G_MID)),
+         Paragraph("", _ps("sc2s")), Paragraph("", _ps("sc2a"))],
+        cr("Total System Cost",       "",        _inr(total)),
+        cr("PM Surya Ghar Subsidy",   "\u2212",  _inr(req.subsidy_inr)),
+        cr("Net Cost After Subsidy",  "",        _inr(req.net_cost_inr), bold=True, hi=True),
+        # Returns section
+        [Paragraph(f"FINANCIAL RETURNS ({req.lifetime_years}-YEAR PROJECTION)",
+                   _ps("sc3", font="DVB", size=8, color=G_MID)),
+         Paragraph("", _ps("sc3s")), Paragraph("", _ps("sc3a"))],
+        cr("Annual Electricity Savings",          "", _inr(req.annual_savings_inr)),
+        cr(f"Lifetime Savings ({req.lifetime_years} yrs)", "", _inr(req.lifetime_savings_inr)),
+        cr(f"Net ROI over {req.lifetime_years} years",     "", f"+{req.net_roi_pct}%", bold=True, hi=True),
+    ]
+
+    # Row backgrounds: section headers get G_LIGHT, subsection rows alternate
+    row_bgs = []
+    section_rows = {0, 6, 10}  # indices of header rows
+    for i, _ in enumerate(cost_rows):
+        if i in section_rows:
+            row_bgs.append(G_LIGHT)
+        elif i in {9, 13}:  # totals
+            row_bgs.append(colors.HexColor("#eaf5ea"))
+        else:
+            row_bgs.append(WHITE if i % 2 == 0 else colors.HexColor("#f4fbf4"))
+
+    cost = Table(cost_rows, colWidths=[IW - PAD*2 - 7*cm, 1.2*cm, 5.8*cm])
+    cost_style = [
         ("GRID",          (0,0),  (-1,-1), 0.4, GREY_B),
-        ("LINEABOVE",     (0,-1), (-1,-1), 1.5, G_DARK),
-        ("TOPPADDING",    (0,0),  (-1,-1), 9),
-        ("BOTTOMPADDING", (0,0),  (-1,-1), 9),
+        ("LINEABOVE",     (0,9),  (-1,9),  1.2, G_DARK),
+        ("LINEABOVE",     (0,13), (-1,13), 1.2, G_DARK),
+        ("TOPPADDING",    (0,0),  (-1,-1), 6),
+        ("BOTTOMPADDING", (0,0),  (-1,-1), 6),
         ("LEFTPADDING",   (0,0),  (0,-1),  10),
         ("RIGHTPADDING",  (2,0),  (2,-1),  10),
         ("VALIGN",        (0,0),  (-1,-1), "MIDDLE"),
-    ]))
+    ]
+    for i, bg in enumerate(row_bgs):
+        cost_style.append(("BACKGROUND", (0,i), (-1,i), bg))
+    cost.setStyle(TableStyle(cost_style))
     story.append(padded(cost))
 
     # ── Footer pinned to bottom, centred ─────────────────────────────────────
