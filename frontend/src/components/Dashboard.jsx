@@ -10,7 +10,6 @@ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "
 const API = process.env.REACT_APP_API_URL || "http://localhost:8000";
 
 // Cities that have real irradiance data files in the backend
-const SUPPORTED_CITIES = ["bhubaneswar", "cuttack", "delhi", "mumbai", "chennai", "bangalore", "kolkata", "jaipur", "hyderabad", "lucknow", "patna"];
 
 const STATS = [
   { key: "capacity_kw", label: "Capacity", fmt: v => `${v} kW`, accent: "#1e6b2e" },
@@ -77,8 +76,8 @@ export default function Dashboard({ results, formData, rooftopData, onReset }) {
     },
   };
 
-  // FIX 3: Warn when city has no real irradiance data and fallback GHI was used.
-  const usingFallback = !SUPPORTED_CITIES.includes((results.city || "").toLowerCase());
+  // Use flag returned by the API — reliable regardless of what cities are supported
+  const usingFallback = results.using_fallback_ghi === true;
 
   const handleDownload = async () => {
     const res = await fetch(`${API}/api/report/generate`, {
@@ -186,6 +185,14 @@ export default function Dashboard({ results, formData, rooftopData, onReset }) {
           {/* Financial returns */}
           <div style={{ fontSize: 11, color: "#888", marginBottom: 4, fontWeight: 600, letterSpacing: "0.04em" }}>
             FINANCIAL RETURNS ({results.lifetime_years}-YEAR PROJECTION)
+          </div>
+          <div className="cost-row">
+            <span>Tariff rate ({results.connection_type || "residential"})</span>
+            <span>₹{results.tariff_per_kwh}/kWh</span>
+          </div>
+          <div className="cost-row">
+            <span>Bill coverage by solar</span>
+            <span style={{ color: "#1e6b2e", fontWeight: 600 }}>{results.bill_coverage_pct}%</span>
           </div>
           <div className="cost-row">
             <span>Annual electricity savings</span>

@@ -1,10 +1,3 @@
-"""
-GreenLens ML Model — Training Script
-Trains XGBoost on NASA POWER irradiance data.
-Run BEFORE the hackathon: python model/train.py
-
-Output: model/ghi_model.json
-"""
 import json, os
 import numpy as np
 import pandas as pd
@@ -14,11 +7,12 @@ from sklearn.metrics import mean_absolute_error
 DATA_DIR = "../data/irradiance"
 
 CITY_COORDS = {
-    "bhubaneswar": (20.29, 85.82), "delhi": (28.61, 77.20),
-    "mumbai": (19.07, 72.87),      "chennai": (13.08, 80.27),
-    "bangalore": (12.97, 77.59),   "kolkata": (22.57, 88.36),
-    "jaipur": (26.91, 75.78),      "hyderabad": (17.38, 78.48),
-    "lucknow": (26.84, 80.94),     "patna": (25.59, 85.13),
+    "bhubaneswar": (20.29, 85.82), "cuttack": (20.46, 85.88),
+    "delhi": (28.61, 77.20),       "mumbai": (19.07, 72.87),
+    "chennai": (13.08, 80.27),     "bangalore": (12.97, 77.59),
+    "kolkata": (22.57, 88.36),     "jaipur": (26.91, 75.78),
+    "hyderabad": (17.38, 78.48),   "lucknow": (26.84, 80.94),
+    "patna": (25.59, 85.13),
 }
 
 def load_data():

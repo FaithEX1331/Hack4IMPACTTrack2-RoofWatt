@@ -1,15 +1,8 @@
-"""
-Pre-hackathon script: Download NASA POWER irradiance data for 10 Indian cities.
-RUN THIS BEFORE THE HACKATHON STARTS.
-
-Usage:
-    cd backend
-    python download_data.py
-"""
 import requests, json, os, time
 
 CITIES = {
     "bhubaneswar": (20.2961, 85.8245),
+    "cuttack":     (20.4625, 85.8830),
     "delhi":       (28.6139, 77.2090),
     "mumbai":      (19.0760, 72.8777),
     "chennai":     (13.0827, 80.2707),
